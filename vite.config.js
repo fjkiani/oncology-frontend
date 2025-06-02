@@ -4,7 +4,6 @@ import { defineConfig } from "vite";
 import { Buffer } from 'buffer';
 
 export default defineConfig({
-  root: "/Users/fahadkiani/Desktop/development/oncology-frontend",
   plugins: [react()],
   resolve: {
     alias: {
