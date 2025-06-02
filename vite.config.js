@@ -13,7 +13,7 @@ export default defineConfig({
       '#minpath': path.resolve(__dirname, "./node_modules/vfile/lib/minpath.js"),
       '#minproc': path.resolve(__dirname, "./node_modules/vfile/lib/minproc.js"),
       '#minurl': path.resolve(__dirname, "./node_modules/vfile/lib/minurl.js"),
-      'node:url': 'url/',
+      'node:url': 'url',
     },
   },
   define: {
