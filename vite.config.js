@@ -4,23 +4,25 @@ import { defineConfig } from "vite";
 import { Buffer } from 'buffer';
 
 export default defineConfig({
+  root: "/Users/fahadkiani/Desktop/development/oncology-frontend",
   plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       'buffer': 'buffer',
+      'path': 'path-browserify',
     },
   },
   define: {
     'global.Buffer': Buffer,
   },
-  base: "./",
+  base: "/",
   server: {
     // No proxy needed for standalone frontend deployment
   },
   build: {
     rollupOptions: {
-      external: ['#minpath', '#minproc', '#minurl'],
+      external: [],
     },
   },
 });
