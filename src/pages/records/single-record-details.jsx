@@ -19,8 +19,8 @@ import AgentInsightWidget from "../../components/AgentInsightWidget";
 // Import the component for displaying structured EHR data + CoPilot prompt
 import PatientRecordViewer from "../../components/ehr/PatientRecordViewer";
 
-console.log('VITE_API_ROOT from import.meta.env:', import.meta.env.VITE_API_ROOT);
-console.log('All import.meta.env variables:', JSON.stringify(import.meta.env, null, 2));
+// console.log('VITE_API_ROOT from import.meta.env:', import.meta.env.VITE_API_ROOT);
+// console.log('All import.meta.env variables:', JSON.stringify(import.meta.env, null, 2));
 
 const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const API_BASE_URL = import.meta.env.VITE_API_ROOT;
