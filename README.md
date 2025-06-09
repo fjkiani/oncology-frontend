@@ -1,132 +1,129 @@
+# AI Cancer Care CoPilot
 
-# Onboarding Plan: Automated Clinical Trials Data Pipeline
+A smart, HIPAA-compliant AI application designed to act as a true CoPilot for oncologists, leveraging an AI agent-based architecture to analyze patient records, automate tasks, and facilitate real-time collaboration.
 
-Welcome to the team! This document outlines your mission: to evolve our clinical trial matching feature from using a static, local dataset to a powerful, automated system that fetches and maintains a comprehensive database of all clinical trials from the National Cancer Institute (NCI).
+## Overview
 
-This is a high-impact project that will ensure our clinicians and AI agents work with the most up-to-date information. You will be replacing our local, file-based ChromaDB with a cloud-native vector database (like AstraDB or pgVector) and building a scheduled data pipeline to keep it current.
+This application aims to significantly reduce administrative burden and help overcome obstacles in cancer care through intelligent automation, analysis, and transparent collaboration. It uses specialized AI agents (built with Python and potentially frameworks like LangChain/AutoGen) coordinated by an orchestrator backend (FastAPI) to handle tasks like:
 
----
+*   Patient record summarization and Q&A (using models like Google Gemini).
+*   Drafting notifications, referrals, and potentially orders.
+*   Assisting with scheduling.
+*   Providing information on medication side effects.
+*   Identifying potential clinical trials.
 
-## The Overall Architecture
+The frontend is built with React (Vite) and TailwindCSS, providing a user interface for interacting with the CoPilot and viewing patient data (currently mocked).
 
-The system you will build consists of three main parts:
-1.  **The Data Pipeline:** A Python script that fetches data from the NCI API, transforms it, and loads it into our databases.
-2.  **The Production Database:** A cloud-based system with two components: our existing SQLite database for metadata and a new cloud vector database (AstraDB or pgVector) for semantic search.
-3.  **The Scheduler:** A cron job that runs the data pipeline automatically on a nightly schedule.
+## Core Concepts
 
----
+*   **Agent-Based Architecture:** Specialized agents handle specific tasks, orchestrated by a central component.
+*   **Role-Centric Workflow:** The orchestrator identifies needs and routes tasks to agents that initiate workflows relevant to specific clinical roles (Clinician, Nurse, Admin, Research, Pharmacy).
+*   **Human-in-the-Loop:** Clinician oversight and approval remain paramount for critical actions suggested or drafted by the AI.
+*   **HIPAA Compliance:** Designed with security and privacy first, including considerations for BAAs, data encryption, access controls, and keeping PHI off any potential blockchain layer.
 
-## Phase 1: Database Setup & Migration
+## Project Structure
 
-**Objective:** Replace our file-based ChromaDB with a robust, cloud-based vector database. This is a prerequisite for a shared, dynamic data source that the pipeline and the main application can both access.
+*   `backend/`: Contains the FastAPI application, agent implementations (`agents/`), orchestrator logic (`core/`), and blockchain utilities (`core/`).
+*   `frontend/`: Contains the React frontend application (`src/`).
+*   `blockchain/`: (Planned) Will contain Hardhat project for smart contracts.
+*   `.env`: For environment variables (API keys, etc. - **DO NOT COMMIT**).
+*   `cursorRules.md`: Internal notes, project plan, and scratchpad for AI assistant.
+*   `README.md`: This file.
 
-**Key Tasks:**
+## Setup and Running
 
-1.  **Choose and Set Up a Cloud Vector Database:**
-    *   We are moving to a production-ready solution. You'll need to set up one of the following:
-        *   **Option A: DataStax AstraDB (Recommended Start):** A managed Cassandra database with built-in vector search capabilities. It's often easier to get started with.
-        *   **Option B: pgVector with Supabase:** A powerful option if we want to keep our metadata (from SQLite) and vectors in the same PostgreSQL database.
-    *   Create an account, set up a new database, and obtain your connection credentials (API Endpoint, Token/Password, etc.). **Store these securely** as environment variables, do not commit them to code.
+**(Instructions to be added here - e.g., Python venv setup, pip install, npm install, running backend/frontend)**
 
-2.  **Refactor Database Connection Logic:**
-    *   Create a new Python module, e.g., `backend/utils/database_connections.py`.
-    *   In this module, write functions to initialize the connection to SQLite and your new cloud vector database. These functions should read credentials from environment variables.
-    *   This centralizes our connection logic, so both the pipeline and the main application can reuse it.
+## Blockchain POC: Contribution Tracking (Feedback Logging)
 
-**Testing Approach for Phase 1:**
+### Goal
 
-*   **Connection Test:** Create a temporary script (`backend/scripts/test_db_connection.py`) to verify that you can successfully connect to the new database using your new utility module.
-*   **CRUD Test (Create, Read, Update, Delete):** In your test script, perform a simple test:
-    1.  Create a new collection/table.
-    2.  Insert a single mock data object with a vector.
-    3.  Query to read the object back.
-    4.  Delete the object.
-    *   This simple test confirms your credentials, permissions, and network access are all working correctly before you move on.
+This Proof-of-Concept (POC) demonstrates the use of blockchain technology to create an immutable, auditable log of specific **contributions** related to the AI CoPilot's usage and improvement, starting with **clinician feedback on AI-generated outputs**.
 
----
+### Core Concept: Off-Chain Data, On-Chain Metadata
 
-## Phase 2: Build the Core Data Pipeline Script
+The fundamental principle guiding this implementation is ensuring **no Protected Health Information (PHI) or sensitive data is ever stored on the blockchain.**
 
-**Objective:** Create the main ETL (Extract, Transform, Load) script that populates your new databases.
+*   **Off-Chain:** The actual content of the contribution (e.g., the text of the feedback provided by a clinician) is stored securely within our conventional, HIPAA-compliant backend systems (database, secure logs).
+*   **On-Chain:** Only non-sensitive **metadata** is recorded on the blockchain ledger. This includes:
+    *   An identifier for the contributor (e.g., the backend service's address logging the event).
+    *   The type of contribution (e.g., `"AI_Feedback"`).
+    *   The timestamp of the contribution.
+    *   A **cryptographic hash** (a unique, fixed-size fingerprint) of the off-chain data. This hash acts as a verifiable link to the original data without revealing its content.
 
-**Key Tasks:**
+### Benefits (Why Use Blockchain for This?)
 
-1.  **Create the Script (`backend/scripts/load_trials_from_api.py`):**
-    *   Use our existing script, [`backend/scripts/load_trials_local.py`](mdc:backend/scripts/load_trials_local.py), as a starting template. It contains valuable logic for database setup, text chunking, and embedding creation.
-    *   **Extract:** Implement the logic to fetch all trials from the NCI API. You must handle pagination correctly using the `size` and `from` parameters. Be polite and add a small delay (`time.sleep(0.5)`) between API calls.
-    *   **Transform:** For each trial, prepare the metadata for SQLite and chunk the eligibility criteria for the vector database. You can reuse the embedding logic from the template script.
-    *   **Load:** Use your new database connection module from Phase 1 to load the data. Implement a "wipe and reload" strategy: at the start of the script, clear the old data before loading the new data.
+1.  **Immutable Audit Trail & Provenance:** Creates a permanent, tamper-proof record confirming *that* feedback was given, *when*, and by *whom* (or which system component logged it). This enhances trust and provides a verifiable history of interactions.
+2.  **Foundation for Contribution Tracking:** Establishes the technical pattern for reliably logging various contributions (feedback, participation in Federated Learning, etc.) needed for potential future incentive models or collaborative improvement efforts.
+3.  **Enhanced Trust & Transparency:** While the POC uses a local network, the architecture allows for future scenarios where a shared, immutable ledger could increase trust between users, the system, and potentially different participating institutions.
+4.  **Data Integrity & Security:** Securely links the immutable on-chain metadata to the sensitive, off-chain data via cryptographic hashes, ensuring we can prove the existence and timing of a contribution without exposing sensitive details on the public ledger, reinforcing HIPAA compliance.
 
-2.  **Implement Robust Logging:**
-    *   Use Python's `logging` module to provide detailed status updates (e.g., "Fetching page 5 of 100...", "Loading trial NCT12345...", "Pipeline run completed successfully."). This is essential for debugging scheduled runs.
+*In Simple Terms for Clinicians:* This system acts like a highly secure digital logbook. When you provide feedback, it permanently records *that* you gave feedback and when, ensuring your input is formally acknowledged and contributes to improving the AI CoPilot, all while keeping patient data completely separate and safe.
 
-**Testing Approach for Phase 2:**
+### How it Works (POC Workflow)
 
-*   **Unit Tests:** For the data fetching logic, use `pytest` and `requests-mock` to test your API interaction function without hitting the live NCI API. Test how it handles success, errors, and empty responses.
-*   **Staged Integration Test:** Run the full script, but temporarily modify it to only fetch a small number of trials (e.g., 100). After the run, connect to your database GUIs (e.g., AstraDB or Supabase UI) and verify:
-    *   The record counts are correct.
-    *   The data content looks right.
-    *   Randomly check one trial on the NCI website and ensure it matches the data in your databases.
+1.  **Feedback Submission (Frontend - Optional):** A user provides feedback on an AI output via the UI.
+2.  **API Call (Frontend -> Backend):** The frontend sends the feedback data (text, context) to a dedicated backend API endpoint: `POST /api/feedback/{patient_id}`.
+3.  **Secure Storage (Backend - Off-Chain):** The backend stores the full feedback content securely in a standard database or secure logging system (this part is assumed/not fully implemented in the POC).
+4.  **Hashing (Backend):** The backend (`feedback` router) calculates a cryptographic hash (SHA-256) of the feedback data.
+5.  **Blockchain Interaction (Backend -> Blockchain):** The backend calls the utility function `blockchain_utils.record_contribution`.
+6.  **Smart Contract Execution (On-Chain):** `record_contribution` builds and signs a transaction to call the `logContribution` function on the `ContributionTracker` smart contract, passing the contribution type (`"AI_Feedback"`) and the calculated hash.
+7.  **Logging (On-Chain):** The smart contract validates the call (e.g., checks if the caller is authorized, typically the owner account specified by `BLOCKCHAIN_PRIVATE_KEY`), records the metadata (contributor address, type, hash, timestamp) immutably on the blockchain ledger, and emits an event (`ContributionLogged`).
+8.  **API Response (Backend -> Frontend):** The backend API responds to the frontend, indicating success or failure and including the blockchain transaction hash if successful (e.g., `{"status":"success", "blockchain_tx_hash":"0x..."}`).
 
----
+### Technology Stack (POC)
 
-## Phase 3: Automation & Scheduling
+*   **Blockchain Network:** Local Hardhat Network (Simulated Ethereum environment for development).
+*   **Smart Contract Language:** Solidity.
+*   **Development Framework:** Hardhat (for compiling, testing, deploying contracts).
+*   **Backend Library:** Web3.py (for Python backend interaction with the blockchain).
 
-**Objective:** Configure your pipeline script to run automatically every night.
+### Smart Contract (`ContributionTracker.sol`)
 
-**Key Tasks:**
+A simple Solidity contract acting as a registry. Its primary functions are:
+*   Define the data structure for a `Contribution`.
+*   Provide a `logContribution` function to add new entries (metadata + hash).
+*   Store entries immutably.
+*   Allow retrieval of logged entries.
+*   Emit an event upon successful logging.
 
-1.  **Create a Wrapper Shell Script (`run_pipeline.sh`):**
-    *   This script will prepare the environment and execute your Python script. It makes the cron command much cleaner and more reliable.
-    *   It should:
-        1.  Navigate to your project directory.
-        2.  Activate the Python virtual environment (`source venv/bin/activate`).
-        3.  Load the necessary environment variables (for DB credentials).
-        4.  Execute the Python pipeline script, redirecting output to a log file.
-        ```bash
-        #!/bin/bash
-        cd /path/to/your/project/backend
-        source ../venv/bin/activate
-        # Load environment variables if needed
-        # export ASTRA_DB_TOKEN=... 
-        python scripts/load_trials_from_api.py >> /var/log/oncology_copilot/trials_pipeline.log 2>&1
-        ```
+### Current Status
 
-2.  **Schedule the Cron Job:**
-    *   Use `crontab -e` to edit the cron table.
-    *   Add an entry to execute your shell script at a set time, for example, 2:00 AM every day.
-        ```cron
-        0 2 * * * /path/to/your/project/run_pipeline.sh
-        ```
+This is currently implemented as a **Proof-of-Concept** using a **local development network**. It demonstrates the mechanism but is not connected to a persistent or shared ledger.
 
-**Testing Approach for Phase 3:**
+### Future Considerations
 
-*   **Manual Trigger:** First, run `./run_pipeline.sh` directly from your terminal to ensure the wrapper script itself works perfectly.
-*   **Short-Interval Test:** Set the cron job to run 5 minutes in the future. After it runs, immediately check the log file for output and the database for updated timestamps. This confirms the scheduler is working.
-*   **Failure Test:** Intentionally introduce an error into your Python script (e.g., a wrong database password) and manually run the wrapper. Verify that the error is correctly captured in your log file.
+*   Deployment to a private/consortium blockchain for shared, controlled access.
+*   Expanding tracked contributions (e.g., Federated Learning updates).
+*   **Extending Logging:** Applying the same metadata logging mechanism to track key **system actions** (e.g., scheduling initiated/confirmed, referral drafted/approved, notification sent) for a more complete, immutable audit trail of CoPilot activity.
+*   Integration with potential incentive systems (tokenization).
 
----
+## Feature Focus: Advanced Consultation Agents
 
-## Phase 4: Application Integration & Final Testing
+Building upon the real-time consultation feature, this work focuses on implementing more sophisticated AI agents that can be invoked directly within the chat flow to assist clinicians during discussions or case reviews.
 
-**Objective:** Connect the main FastAPI application to the new, dynamic database so our agents can use the live data.
+### Goal
 
-**Key Tasks:**
+Enhance the utility of the Doctor-to-Doctor consultation feature by providing on-demand, context-aware information synthesis and drafting capabilities through specialized AI agents.
 
-1.  **Update Agent Code:**
-    *   Review [`backend/agents/clinical_trial_agent.py`](mdc:backend/agents/clinical_trial_agent.py). This is where the application queries for trials.
-    *   Modify it to use your new `database_connections.py` module to connect to the cloud vector database instead of the local ChromaDB.
-    *   Ensure the agent reads database credentials from environment variables.
+### Agents Being Developed:
 
-**Testing Approach for Phase 4:**
+1.  **`ComparativeTherapyAgent`**
+    *   **Purpose:** Provides clinicians with a structured comparison of specified treatment regimens based on requested criteria (e.g., efficacy, side effects).
+    *   **Trigger:** Invoked via a chat command (e.g., `/compare-therapy current:[RegimenA] vs alternative:[RegimenB] focus:criteria`).
+    *   **Workflow:** Retrieves relevant patient context, queries knowledge sources (LLM, potentially integrated databases), synthesizes findings based on focus criteria.
+    *   **Output:** Posts a structured comparison summary directly into the consultation chat.
+    *   **Disclaimer:** Output is AI-generated for informational purposes and requires clinical verification. Does not constitute a treatment recommendation.
 
-*   **End-to-End (E2E) System Test:** This is the final verification.
-    *   Run the full application (frontend and backend).
-    *   Through the user interface, perform searches and test the full patient matching flow with the [`EligibilityDeepDiveAgent`](mdc:backend/agents/eligibility_deep_dive_agent.py).
-    *   **Verify:**
-        *   Search results are fast and accurate.
-        *   The results reflect the comprehensive data from the NCI, not our old mock data.
-        *   The full matching process completes successfully for a test patient.
-*   **Manual Performance Check:** While using the UI, note the response time for searches. Is it acceptably fast? This provides a baseline understanding of the new database's performance.
+2.  **`PatientEducationDraftAgent`**
+    *   **Purpose:** Assists clinicians by drafting patient-friendly explanations of medical topics discussed during the consultation.
+    *   **Trigger:** Invoked via a chat command (e.g., `/draft-patient-info topic:"Explanation of Treatment X"`), potentially using chat context.
+    *   **Workflow:** Uses an LLM with tailored prompts to generate clear, simple text explaining the specified topic at an appropriate reading level.
+    *   **Output:** Posts text clearly marked as a **DRAFT** into the consultation chat, intended solely for clinician review and editing *before* any potential use with a patient.
+    *   **Safety:** Clinician review and editing of the draft are mandatory before sharing any information derived from it with patients.
 
-Good luck! This project is a fantastic opportunity to build a robust, production-grade data system. Don't hesitate to ask questions.
+### Integration
+
+Both agents will receive triggers from the consultation chat interface, be processed by the backend orchestrator, and post their results back into the same chat session for immediate visibility to the participants.
+
+
