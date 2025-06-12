@@ -187,7 +187,7 @@ const InterpretedTrialResult = ({
      if (onPlanFollowups && currentHasActionSuggestions) { // Use currentHasActionSuggestions
          onPlanFollowups({ 
              suggestions: currentActionSuggestions, // Use currentActionSuggestions
-             trialId: item.nct_id, 
+             trialId: item.id, 
              trialTitle: item.title 
          }); 
      } else {
@@ -291,7 +291,7 @@ const InterpretedTrialResult = ({
            <h4 className="text-base font-semibold text-blue-700 mb-0.5">{item.title || 'No Title'}</h4>
            )}
            <div className="text-xs text-gray-600">
-              <span>NCT ID: {item.nct_id || 'N/A'}</span> |
+              <span>NCT ID: {item.id || 'N/A'}</span> |
               <span> Status: {item.status ? item.status.replace(/\n.*/, '').trim() : 'N/A'}</span> |
               <span> Phase: {item.phase || 'N/A'}</span>
             </div>
