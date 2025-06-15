@@ -15,9 +15,12 @@ import FileUploadModal from "./components/file-upload-modal";
 import RecordDetailsHeader from "./components/record-details-header";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import AgentInsightWidget from "../../components/AgentInsightWidget";
+import TutorialTrigger from "../../components/TutorialSystem/TutorialTrigger";
+import InteractiveGuide from "../../components/TutorialSystem/InteractiveGuide";
 
 // Import the component for displaying structured EHR data + CoPilot prompt
 import PatientRecordViewer from "../../components/ehr/PatientRecordViewer";
+import { useActivity } from "../../context/ActivityContext";
 
 // console.log('VITE_API_ROOT from import.meta.env:', import.meta.env.VITE_API_ROOT);
 // console.log('All import.meta.env variables:', JSON.stringify(import.meta.env, null, 2));
@@ -249,48 +252,134 @@ const SingleRecordDetails = () => {
     fetchPatientData();
   }, [patientIdFromUrl, API_BASE_URL]); // Use API_BASE_URL in dependency array
 
+  // Tutorial state
+  const [showWorkflowGuide, setShowWorkflowGuide] = useState(false);
+
+  // Check if user needs workflow guidance
+  useEffect(() => {
+    const hasSeenGuide = localStorage.getItem('patient_record_workflow_completed');
+    if (!hasSeenGuide) {
+      setShowWorkflowGuide(true);
+    }
+  }, []);
+
+  // Workflow steps for the patient record
+  const workflowSteps = [
+    {
+      title: "Review AI Insights",
+      description: "Start by reviewing the AI-generated insights at the top of the page."
+    },
+    {
+      title: "Examine Patient Data", 
+      description: "Review demographics, diagnosis, and current treatment information."
+    },
+    {
+      title: "Explore Research Options",
+      description: "Use the Research Portal to find relevant clinical trials."
+    },
+    {
+      title: "Analyze Mutations",
+      description: "Check the Mutation Explorer for genomic analysis and recommendations."
+    },
+    {
+      title: "Manage Follow-ups",
+      description: "Review and create follow-up tasks for comprehensive care."
+    }
+  ];
 
   // --- Rendering Logic ---
 
   return (
-    <div className="flex flex-col gap-6"> {/* Use flex-col for better layout */}
+    <div className="container mx-auto p-6 min-h-screen">
+      {/* Enhanced Header with Tutorial Features */}
+      <div className="flex justify-between items-center mb-6">
+        <button onClick={() => navigate(-1)} className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded">
+          &larr; Back
+        </button>
+        
+        <div className="flex items-center space-x-4">
+          <InteractiveGuide.Hint 
+            text="Toggle workflow guidance to see step-by-step instructions for patient analysis"
+            position="left"
+          >
+            <button
+              onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {showWorkflowGuide ? 'Hide Workflow' : 'Show Workflow Guide'}
+            </button>
+          </InteractiveGuide.Hint>
+        </div>
+      </div>
+
+      {/* Workflow Guide */}
+      {showWorkflowGuide && (
+        <div className="mb-6">
+          <InteractiveGuide.Flow
+            title="Patient Analysis Workflow"
+            steps={workflowSteps}
+            currentStep={0}
+            onStepComplete={(stepIndex) => {
+              if (stepIndex === workflowSteps.length - 1) {
+                localStorage.setItem('patient_record_workflow_completed', 'true');
+                setShowWorkflowGuide(false);
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* AI Insights with Enhanced Tooltips */}
+      <InteractiveGuide.Hint 
+        text="This widget shows AI-generated insights specific to this patient, including clinical trial matches and treatment recommendations"
+        position="bottom"
+        persistent={false}
+      >
+        <AgentInsightWidget patientId={patientIdFromUrl} />
+      </InteractiveGuide.Hint>
+
+      {/* Patient Demographics with Hints */}
+      <InteractiveGuide.Hint 
+        text="Patient demographics and key medical information. This data is used by AI agents for personalized analysis"
+        position="right"
+      >
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Patient Information</h2>
+          {/* ... existing demographics content ... */}
+        </div>
+      </InteractiveGuide.Hint>
+
+      {/* Enhanced Action Buttons */}
+      <InteractiveGuide.Hint 
+        text="These buttons provide quick access to specialized analysis tools. Start with Research Portal for clinical trials or Mutation Explorer for genomic analysis"
+        position="bottom"
+      >
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => navigate(`/medical-records/${patientIdFromUrl}/research`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+          >
+            🔬 Research Portal
+          </button>
+          <button
+            onClick={() => navigate(`/mutation-explorer/${patientIdFromUrl}`)}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+          >
+            🧬 Mutation Explorer
+          </button>
+          <button
+            onClick={() => navigate(`/medical-records/${patientIdFromUrl}/tasks`)}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+          >
+            📋 Follow-up Tasks
+          </button>
+        </div>
+      </InteractiveGuide.Hint>
+
       {/* Header and Buttons */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <RecordDetailsHeader recordName={state?.recordName || `Patient ID: ${patientIdFromUrl || 'N/A'}`} />
         <div className="flex gap-2">
-          {/* Research Portal Button */}
-          <button
-            type="button"
-            onClick={() => navigate(`/medical-records/${patientIdFromUrl}/research`)}
-            className="inline-flex items-center gap-x-2 rounded-md border border-gray-200 bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 3H4C3.44772 3 3 3.44772 3 4V10C3 10.5523 3.44772 11 4 11H10C10.5523 11 11 10.5523 11 10V4C11 3.44772 10.5523 3 10 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20 3H14C13.4477 3 13 3.44772 13 4V10C13 10.5523 13.4477 11 14 11H20C20.5523 11 21 10.5523 21 10V4C21 3.44772 20.5523 3 20 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 13H4C3.44772 13 3 13.4477 3 14V20C3 20.5523 3.44772 21 4 21H10C10.5523 21 11 20.5523 11 20V14C11 13.4477 10.5523 13 10 13Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M17 21C19.2091 21 21 19.2091 21 17C21 14.7909 19.2091 13 17 13C14.7909 13 13 14.7909 13 17C13 19.2091 14.7909 21 17 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Research Portal
-          </button>
-
-          {/* Mutation Explorer Button */}
-          <button
-            type="button"
-            onClick={() => navigate(`/mutation-explorer/${patientIdFromUrl}`)}
-            className="inline-flex items-center gap-x-2 rounded-md border border-gray-200 bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 12C20 6.5 17 3 12 3C7 3 4 6.5 4 12C4 17.5 7 21 12 21C17 21 20 17.5 20 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M4.5 9.5H19.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M4.5 14.5H19.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8.5 3.5V9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M15.5 14.5V20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M15.5 3.5V9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8.5 14.5V20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Mutation Explorer
-          </button>
-
           {/* Upload Report Button */}
           <button
             type="button"
@@ -379,7 +468,6 @@ const SingleRecordDetails = () => {
              <div className="p-4 text-center text-red-600">Error loading EHR data: {ehrError}</div>
          ) : patientData ? (
              <>
-               <AgentInsightWidget patientId={patientIdFromUrl} />
                <PatientRecordViewer patientData={patientData} />
              </>
          ) : (
@@ -387,6 +475,12 @@ const SingleRecordDetails = () => {
          )}
       </div>
 
+      {/* Tutorial Trigger for Patient Records */}
+      <TutorialTrigger 
+        tutorialType="patientRecord"
+        showOnFirstVisit={true}
+        position="bottom-right"
+      />
     </div>
   );
 };

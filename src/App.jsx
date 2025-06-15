@@ -17,6 +17,7 @@ import { useStateContext } from "./context";
 import { ActivityProvider } from "./context/ActivityContext";
 import GlobalActivitySidebar from "./components/GlobalActivitySidebar";
 import InvestorSlideshow from './pages/InvestorSlideshow';
+import WelcomeModal from './components/WelcomeModal';
 
 const App = () => {
   const { user, authenticated, ready, login, currentUser } = useStateContext();
@@ -76,6 +77,9 @@ const App = () => {
         
         {/* Global Activity Sidebar - shows on all pages */}
         <GlobalActivitySidebar />
+        
+        {/* Welcome Modal - shows on first visit */}
+        <WelcomeModal />
     </div>
     </ActivityProvider>
   );
